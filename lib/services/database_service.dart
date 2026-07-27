@@ -6,6 +6,10 @@ class DatabaseService {
   static const String expenseBox = "expenses";
 
   static Future<Box<Expense>> openExpenseBox() async {
+    if (Hive.isBoxOpen(expenseBox)) {
+      return Hive.box<Expense>(expenseBox);
+    }
+
     return await Hive.openBox<Expense>(expenseBox);
   }
 
@@ -22,10 +26,14 @@ class DatabaseService {
   }
 
   static Future<void> deleteExpense(Expense expense) async {
-    await expense.delete();
+    final box = await openExpenseBox();
+
+    await box.delete(expense.id);
   }
 
   static Future<void> updateExpense(Expense expense) async {
-    await expense.save();
+    final box = await openExpenseBox();
+
+    await box.put(expense.id, expense);
   }
 }

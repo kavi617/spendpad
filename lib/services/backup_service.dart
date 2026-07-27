@@ -8,7 +8,9 @@ import 'package:share_plus/share_plus.dart';
 import '../models/expense.dart';
 
 class BackupService {
-  // Export expenses as JSON backup file
+  // ================================
+  // Export Expenses to JSON Backup
+  // ================================
   static Future<void> exportExpenses(List<Expense> expenses) async {
     final data = expenses.map((expense) {
       return {
@@ -20,7 +22,7 @@ class BackupService {
       };
     }).toList();
 
-    final jsonString = jsonEncode(data);
+    final jsonString = const JsonEncoder.withIndent('  ').convert(data);
 
     final directory = await getApplicationDocumentsDirectory();
 
@@ -31,7 +33,9 @@ class BackupService {
     await SharePlus.instance.share(ShareParams(files: [XFile(file.path)], text: "SpendPad Expense Backup"));
   }
 
-  // Import expenses from JSON file
+  // ================================
+  // Import Expenses from JSON File
+  // ================================
   static Future<List<Expense>> importExpenses(File file) async {
     final jsonString = await file.readAsString();
 
@@ -39,16 +43,22 @@ class BackupService {
 
     return data.map((item) {
       return Expense(
-        id: item["id"],
-        category: item["category"],
-        note: item["note"],
+        id: item["id"].toString(),
+
+        category: item["category"] ?? "Other",
+
+        note: item["note"] ?? "",
+
         amount: (item["amount"] as num).toDouble(),
+
         date: DateTime.parse(item["date"]),
       );
     }).toList();
   }
 
-  // Pick backup JSON file
+  // ================================
+  // Pick Backup JSON File
+  // ================================
   static Future<List<Expense>?> pickBackupFile() async {
     final result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['json']);
 
