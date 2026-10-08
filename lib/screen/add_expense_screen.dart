@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../models/expense.dart';
 import '../models/category.dart';
 import '../services/category_service.dart';
+import '../utils/app_format.dart';
+import '../utils/icon_helper.dart';
 
 class AddExpenseScreen extends StatefulWidget {
   final Expense? expense;
@@ -14,155 +16,243 @@ class AddExpenseScreen extends StatefulWidget {
 }
 
 class _AddExpenseScreenState extends State<AddExpenseScreen> {
-  final TextEditingController amountController = TextEditingController();
+  final TextEditingController _amountController = TextEditingController();
+  final TextEditingController _noteController = TextEditingController();
 
-  final TextEditingController noteController = TextEditingController();
+  List<Category> _categories = [];
+  String? _selectedCategory;
+  DateTime _selectedDate = DateTime.now();
 
-  List<Category> categories = [];
-
-  String? selectedCategory;
-
-  DateTime selectedDate = DateTime.now();
+  bool get _isEditing => widget.expense != null;
 
   @override
   void initState() {
     super.initState();
+    _loadCategories();
 
-    loadCategories();
-
-    // Load existing expense when editing
     if (widget.expense != null) {
-      amountController.text = widget.expense!.amount.toString();
-
-      noteController.text = widget.expense!.note;
-
-      selectedCategory = widget.expense!.category;
-
-      selectedDate = widget.expense!.date;
+      _amountController.text = widget.expense!.amount.toString();
+      _noteController.text = widget.expense!.note;
+      _selectedCategory = widget.expense!.category;
+      _selectedDate = widget.expense!.date;
     }
   }
 
-  Future<void> loadCategories() async {
+  Future<void> _loadCategories() async {
     final data = await CategoryService.getCategories();
-
     if (!mounted) return;
-
     setState(() {
-      categories = data;
-
-      // Only set default category for new expense
-      if (widget.expense == null && selectedCategory == null && categories.isNotEmpty) {
-        selectedCategory = categories.first.name;
+      _categories = data;
+      if (_selectedCategory == null && _categories.isNotEmpty) {
+        _selectedCategory = _categories.first.name;
       }
     });
   }
 
-  Future<void> selectDate() async {
-    final DateTime? picked = await showDatePicker(
+  Future<void> _selectDate() async {
+    final picked = await showDatePicker(
       context: context,
-
-      initialDate: selectedDate,
-
-      firstDate: DateTime(2020),
-
+      initialDate: _selectedDate,
+      firstDate: DateTime(2000),
       lastDate: DateTime(2100),
     );
-
     if (picked != null) {
-      setState(() {
-        selectedDate = picked;
-      });
+      setState(() => _selectedDate = picked);
     }
-  }
-
-  String formatDate(DateTime date) {
-    return "${date.day.toString().padLeft(2, '0')}/"
-        "${date.month.toString().padLeft(2, '0')}/"
-        "${date.year}";
   }
 
   @override
   void dispose() {
-    amountController.dispose();
-
-    noteController.dispose();
-
+    _amountController.dispose();
+    _noteController.dispose();
     super.dispose();
+  }
+
+  Future<void> _save() async {
+    final raw = _amountController.text.trim().replaceAll(',', '');
+    if (raw.isEmpty) {
+      _showMessage('Please enter an amount');
+      return;
+    }
+
+    final amount = double.tryParse(raw);
+    if (amount == null) {
+      _showMessage('Enter a valid amount');
+      return;
+    }
+    if (amount <= 0) {
+      _showMessage('Amount must be greater than zero');
+      return;
+    }
+    if (_selectedCategory == null) {
+      _showMessage('Please select a category');
+      return;
+    }
+
+    final expense = Expense(
+      id: widget.expense?.id ??
+          DateTime.now().millisecondsSinceEpoch.toString(),
+      category: _selectedCategory!,
+      note: _noteController.text.trim(),
+      amount: amount,
+      date: _selectedDate,
+    );
+
+    if (!mounted) return;
+    Navigator.pop(context, expense);
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(widget.expense == null ? "Add Expense" : "Edit Expense")),
+    final scheme = Theme.of(context).colorScheme;
 
+    return Scaffold(
+      appBar: AppBar(title: Text(_isEditing ? 'Edit expense' : 'Add expense')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
-
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Amount
             TextField(
-              controller: amountController,
-
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-
-              decoration: const InputDecoration(labelText: "Amount", prefixText: "₹ ", border: OutlineInputBorder()),
-            ),
-
-            const SizedBox(height: 20),
-
-            categories.isEmpty
-                ? const Text(
-                    "No categories available. Please add categories from Settings.",
-                    style: TextStyle(color: Colors.red),
-                  )
-                : DropdownButtonFormField<String>(
-                    value: selectedCategory,
-
-                    decoration: const InputDecoration(labelText: "Category", border: OutlineInputBorder()),
-
-                    items: categories.map((category) {
-                      return DropdownMenuItem<String>(value: category.name, child: Text(category.name));
-                    }).toList(),
-
-                    onChanged: (value) {
-                      setState(() {
-                        selectedCategory = value;
-                      });
-                    },
-                  ),
-
-            const SizedBox(height: 20),
-
-            InkWell(
-              onTap: selectDate,
-
-              child: InputDecorator(
-                decoration: const InputDecoration(
-                  labelText: "Date",
-
-                  border: OutlineInputBorder(),
-
-                  suffixIcon: Icon(Icons.calendar_today),
+              controller: _amountController,
+              autofocus: !_isEditing,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              style: const TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5,
+              ),
+              decoration: InputDecoration(
+                hintText: '0',
+                prefixText: '${AppFormat.symbol} ',
+                prefixStyle: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: scheme.onSurfaceVariant,
                 ),
-
-                child: Text(formatDate(selectedDate)),
+                filled: false,
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
               ),
             ),
+            const Divider(),
+            const SizedBox(height: 16),
 
+            // Quick dates
+            Row(
+              children: [
+                _quickDateChip('Today', 0),
+                const SizedBox(width: 8),
+                _quickDateChip('Yesterday', -1),
+                const Spacer(),
+                Flexible(
+                  child: TextButton.icon(
+                    onPressed: _selectDate,
+                    icon: const Icon(Icons.calendar_today_rounded, size: 16),
+                    label: Text(
+                      _compactDate(_selectedDate),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Category dropdown
+            Text(
+              'Category',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 10),
+            if (_categories.isEmpty)
+              Text(
+                'No categories yet — add one from Settings → Manage categories.',
+                style: TextStyle(fontSize: 13, color: scheme.error),
+              )
+            else
+              DropdownButtonFormField<String>(
+                initialValue: _selectedCategory,
+                isExpanded: true,
+                decoration: InputDecoration(
+                  prefixIcon: _selectedCategory == null
+                      ? const Icon(Icons.category_rounded, size: 20)
+                      : Icon(
+                          IconHelper.iconFor(_selectedCategory!),
+                          size: 20,
+                          color: IconHelper.colorFor(_selectedCategory!),
+                        ),
+                ),
+                items: [
+                  for (final category in _categories)
+                    DropdownMenuItem<String>(
+                      value: category.name,
+                      child: Row(
+                        children: [
+                          Icon(
+                            IconHelper.iconFor(category.name),
+                            size: 18,
+                            color: IconHelper.colorFor(category.name),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              category.name,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+                onChanged: (value) =>
+                    setState(() => _selectedCategory = value),
+              ),
             const SizedBox(height: 20),
 
+            // Note
             TextField(
-              controller: noteController,
-
-              decoration: const InputDecoration(labelText: "Note", border: OutlineInputBorder()),
+              controller: _noteController,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: InputDecoration(
+                hintText: 'Note (optional) — e.g. lunch with team',
+                prefixIcon: const Icon(Icons.sticky_note_2_rounded, size: 20),
+              ),
             ),
-
-            const SizedBox(height: 30),
+            const SizedBox(height: 28),
 
             SizedBox(
               width: double.infinity,
-
-              child: ElevatedButton(onPressed: saveExpense, child: const Text("SAVE")),
+              height: 52,
+              child: FilledButton(
+                onPressed: _save,
+                style: FilledButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: Text(
+                  _isEditing ? 'Update expense' : 'Save expense',
+                  style: const TextStyle(
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -170,45 +260,24 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     );
   }
 
-  void saveExpense() {
-    if (amountController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please enter an amount")));
+  String _compactDate(DateTime d) {
+    final now = DateTime.now();
+    if (d.year == now.year) return AppFormat.dayMonth(d);
+    return '${AppFormat.dayMonth(d)} ${d.year % 100}';
+  }
 
-      return;
-    }
+  Widget _quickDateChip(String label, int dayOffset) {
+    final now = DateTime.now();
+    final target = DateTime(now.year, now.month, now.day + dayOffset);
+    final isSelected =
+        _selectedDate.year == target.year &&
+        _selectedDate.month == target.month &&
+        _selectedDate.day == target.day;
 
-    final amount = double.tryParse(amountController.text);
-
-    if (amount == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Enter a valid amount")));
-
-      return;
-    }
-
-    if (amount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Amount must be greater than zero")));
-
-      return;
-    }
-
-    if (selectedCategory == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please select a category")));
-
-      return;
-    }
-
-    final expense = Expense(
-      id: widget.expense?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-
-      category: selectedCategory!,
-
-      note: noteController.text,
-
-      amount: amount,
-
-      date: selectedDate,
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (_) => setState(() => _selectedDate = target),
     );
-
-    Navigator.pop(context, expense);
   }
 }

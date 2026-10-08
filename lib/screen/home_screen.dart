@@ -1,243 +1,419 @@
 import 'package:flutter/material.dart';
 
 import '../models/expense.dart';
+import '../services/category_service.dart';
 import '../services/database_service.dart';
+import '../utils/app_format.dart';
+import '../utils/expense_helper.dart';
+import '../widgets/animations.dart';
+import '../widgets/expense_card.dart';
 import 'add_expense_screen.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final VoidCallback? onSeeAll;
+
+  const HomePage({super.key, this.onSeeAll});
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  List<Expense> expenses = [];
+  List<Expense> _all = [];
+  List<Expense> _recent = [];
 
-  double monthlyTotal = 0;
+  double _monthTotal = 0;
+  double _todayTotal = 0;
+  double _avgPerDay = 0;
+  int _monthCount = 0;
+  double? _monthDelta; // % vs the same days of the previous month
+  String _prevMonthLabel = '';
+  String _topCategory = '';
 
-  double todayTotal = 0;
-
-  int monthlyTransactionCount = 0;
-
-  String topCategory = "";
-
-  double topCategoryAmount = 0;
-
-  double topCategoryPercentage = 0;
+  bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-
-    loadExpenses();
+    _load();
   }
 
-  Future<void> loadExpenses() async {
+  Future<void> _load() async {
     final data = await DatabaseService.getExpenses();
+    await CategoryService.getCategories(); // refreshes manual icon overrides
+    data.sort((a, b) => b.date.compareTo(a.date));
 
     final now = DateTime.now();
+    final monthExpenses = ExpenseHelper.inMonth(data, now);
 
-    double monthTotal = 0;
+    // Fair comparison: month-to-date vs the SAME days of the previous month.
+    final prevMonth = DateTime(now.year, now.month - 1);
+    final prevElapsed = now.day.clamp(1, ExpenseHelper.daysInMonth(prevMonth));
+    final prevSamePeriod = ExpenseHelper.totalUpTo(data, prevMonth, prevElapsed);
 
-    double today = 0;
-
-    int monthTransactions = 0;
-
-    Map<String, double> categoryMap = {};
-
-    for (final expense in data) {
-      if (expense.date.year == now.year && expense.date.month == now.month) {
-        monthTotal += expense.amount;
-
-        monthTransactions++;
-
-        categoryMap[expense.category] = (categoryMap[expense.category] ?? 0) + expense.amount;
-      }
-
-      if (expense.date.year == now.year && expense.date.month == now.month && expense.date.day == now.day) {
-        today += expense.amount;
-      }
-    }
-
-    String category = "";
-
-    double highest = 0;
-
-    categoryMap.forEach((key, value) {
-      if (value > highest) {
-        highest = value;
-
-        category = key;
+    var topCategory = '';
+    var topAmount = 0.0;
+    ExpenseHelper.categoryTotals(monthExpenses).forEach((name, value) {
+      if (value > topAmount) {
+        topAmount = value;
+        topCategory = name;
       }
     });
 
     if (!mounted) return;
-
     setState(() {
-      expenses = data;
-
-      monthlyTotal = monthTotal;
-
-      todayTotal = today;
-
-      monthlyTransactionCount = monthTransactions;
-
-      topCategory = category;
-
-      topCategoryAmount = highest;
-
-      topCategoryPercentage = monthlyTotal == 0 ? 0 : (highest / monthlyTotal) * 100;
+      _all = data;
+      _recent = data.take(8).toList();
+      _monthTotal = ExpenseHelper.totalOf(monthExpenses);
+      _todayTotal = ExpenseHelper.getTodayTotal(data);
+      _avgPerDay = ExpenseHelper.averagePerDay(monthExpenses, now);
+      _monthCount = monthExpenses.length;
+      _monthDelta = ExpenseHelper.percentChange(_monthTotal, prevSamePeriod);
+      _prevMonthLabel = AppFormat.shortMonth(prevMonth);
+      _topCategory = topCategory;
+      _loading = false;
     });
   }
 
-  Future<void> addExpense() async {
-    final result = await Navigator.push(context, MaterialPageRoute(builder: (context) => const AddExpenseScreen()));
-
-    if (result != null && result is Expense) {
+  Future<void> _addExpense() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AddExpenseScreen()),
+    );
+    if (result is Expense) {
       await DatabaseService.addExpense(result);
-
-      await loadExpenses();
-
+      await _load();
       if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Expense saved successfully")));
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('Expense saved')));
     }
   }
 
-  Future<void> deleteExpense(Expense expense) async {
-    await DatabaseService.deleteExpense(expense);
+  Future<void> _editExpense(Expense expense) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => AddExpenseScreen(expense: expense)),
+    );
+    if (result is Expense) {
+      await DatabaseService.updateExpense(result);
+      await _load();
+    }
+  }
 
-    await loadExpenses();
+  Future<void> _deleteExpense(Expense expense) async {
+    await DatabaseService.deleteExpense(expense);
+    await _load();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: const Text('Expense deleted'),
+          action: SnackBarAction(
+            label: 'Undo',
+            onPressed: () async {
+              await DatabaseService.addExpense(expense);
+              await _load();
+            },
+          ),
+        ),
+      );
   }
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      appBar: AppBar(title: const Text("SpendPad")),
-
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: addExpense,
-
-        icon: const Icon(Icons.add),
-
-        label: const Text("Expense"),
+        onPressed: _addExpense,
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Add'),
       ),
-
       body: RefreshIndicator(
-        onRefresh: loadExpenses,
-
+        onRefresh: _load,
         child: ListView(
-          padding: const EdgeInsets.all(16),
-
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 96),
           children: [
-            const Text("Dashboard", style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
-
-            const SizedBox(height: 20),
-
-            Row(
-              children: [
-                Expanded(
-                  child: dashboardCard(Icons.calendar_month, "This Month", "\$${monthlyTotal.toStringAsFixed(2)}"),
-                ),
-
-                const SizedBox(width: 12),
-
-                Expanded(child: dashboardCard(Icons.today, "Today", "\$${todayTotal.toStringAsFixed(2)}")),
-              ],
+            SizedBox(height: MediaQuery.paddingOf(context).top + 12),
+            Text(
+              AppFormat.greeting(),
+              style: TextStyle(
+                fontSize: 14,
+                color: scheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+              ),
             ),
-
-            const SizedBox(height: 15),
-
-            dashboardCard(Icons.receipt_long, "Transactions", "$monthlyTransactionCount this month"),
-
-            const SizedBox(height: 15),
-
-            if (topCategory.isNotEmpty)
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.star, color: Colors.orange),
-
-                  title: const Text("Top Spending Category"),
-
-                  subtitle: Text("$topCategory (${topCategoryPercentage.toStringAsFixed(1)}%)"),
-
-                  trailing: Text(
-                    "\$${topCategoryAmount.toStringAsFixed(2)}",
-
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+            const SizedBox(height: 2),
+            const Text(
+              'SpendPad',
+              style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: -0.5),
+            ),
+            const SizedBox(height: 16),
+            StaggerIn(index: 0, child: _monthCard(scheme)),
+            const SizedBox(height: 12),
+            StaggerIn(index: 1, child: _statsRow(scheme)),
+            const SizedBox(height: 24),
+            StaggerIn(
+              index: 2,
+              child: _sectionHeader(
+                title: 'Recent activity',
+                actionLabel: _all.length > _recent.length ? 'View all' : null,
+                onAction: widget.onSeeAll,
+              ),
+            ),
+            const SizedBox(height: 10),
+            if (_loading)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(32),
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            else if (_recent.isEmpty)
+              StaggerIn(index: 3, child: _emptyState(scheme))
+            else
+              ...[
+                for (var i = 0; i < _recent.length; i++)
+                  StaggerIn(
+                    index: 3 + i,
+                    child: _dismissibleTile(_recent[i]),
                   ),
+              ],
+            if (_all.length > _recent.length) ...[
+              const SizedBox(height: 4),
+              Center(
+                child: TextButton(
+                  onPressed: widget.onSeeAll,
+                  child: Text('View all ${_all.length} transactions'),
                 ),
               ),
-
-            const SizedBox(height: 20),
-
-            const Text("Recent Expenses", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-
-            const SizedBox(height: 10),
-
-            if (expenses.isEmpty)
-              const Center(
-                child: Padding(padding: EdgeInsets.all(40), child: Text("No expenses yet")),
-              )
-            else
-              ...expenses.reversed.map((expense) {
-                return Card(
-                  child: ListTile(
-                    leading: CircleAvatar(child: Text(expense.category[0].toUpperCase())),
-
-                    title: Text(expense.category),
-
-                    subtitle: Text(expense.note.isEmpty ? expense.date.toString().split(" ").first : expense.note),
-
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-
-                      children: [
-                        Text(
-                          "\$${expense.amount.toStringAsFixed(2)}",
-
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-
-                        IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-
-                          onPressed: () {
-                            deleteExpense(expense);
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }),
+            ],
           ],
         ),
       ),
     );
   }
 
-  Widget dashboardCard(IconData icon, String title, String value) {
+  Widget _monthCard(ColorScheme scheme) {
+    final delta = _monthDelta;
+    final tooEarly = DateTime.now().day <= 1;
+    final deltaText = (delta == null || tooEarly)
+        ? null
+        : '${delta <= 0 ? '↓' : '↑'} ${delta.abs().toStringAsFixed(0)}% vs $_prevMonthLabel so far';
+    final deltaColor = delta != null && delta > 0 ? scheme.error : scheme.primary;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: scheme.primaryContainer,
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'SPENT THIS MONTH',
+            style: TextStyle(
+              fontSize: 11,
+              letterSpacing: 1.2,
+              fontWeight: FontWeight.w700,
+              color: scheme.onPrimaryContainer.withValues(alpha: 0.65),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            AppFormat.money(_monthTotal),
+            style: TextStyle(
+              fontSize: 34,
+              fontWeight: FontWeight.w800,
+              color: scheme.onPrimaryContainer,
+              letterSpacing: -0.5,
+              fontFeatures: [FontFeature.tabularFigures()],
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Icon(Icons.today_rounded,
+                  size: 15, color: scheme.onPrimaryContainer.withValues(alpha: 0.7)),
+              const SizedBox(width: 5),
+              Text(
+                '${AppFormat.money(_todayTotal)} today',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: scheme.onPrimaryContainer.withValues(alpha: 0.85),
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+              const SizedBox(width: 14),
+              Icon(Icons.insights_rounded,
+                  size: 15, color: scheme.onPrimaryContainer.withValues(alpha: 0.7)),
+              const SizedBox(width: 5),
+              Text(
+                '${AppFormat.money(_avgPerDay)}/day avg',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: scheme.onPrimaryContainer.withValues(alpha: 0.85),
+                ),
+              ),
+            ],
+          ),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            child: deltaText == null
+                ? const SizedBox.shrink()
+                : Container(
+                    key: ValueKey(deltaText),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: scheme.surfaceContainerLowest,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      deltaText,
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: deltaColor),
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statsRow(ColorScheme scheme) {
+    return Row(
+      children: [
+        Expanded(
+          child: _statCard(
+            scheme,
+            icon: Icons.receipt_rounded,
+            label: 'Transactions',
+            value: '$_monthCount',
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _statCard(
+            scheme,
+            icon: Icons.star_rounded,
+            label: 'Top category',
+            value: _topCategory.isEmpty ? '—' : _topCategory,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _statCard(
+    ColorScheme scheme, {
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
     return Card(
-      elevation: 3,
-
       child: Padding(
-        padding: const EdgeInsets.all(16),
-
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
           children: [
-            Icon(icon, size: 30),
+            Icon(icon, size: 20, color: scheme.primary),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-            const SizedBox(height: 10),
+  Widget _sectionHeader({
+    required String title,
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+        ),
+        if (actionLabel != null && onAction != null)
+          TextButton(onPressed: onAction, child: Text(actionLabel)),
+      ],
+    );
+  }
 
-            Text(title),
+  Widget _dismissibleTile(Expense expense) {
+    return Dismissible(
+      key: ValueKey('home-${expense.id}'),
+      direction: DismissDirection.endToStart,
+      onDismissed: (_) => _deleteExpense(expense),
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFE5533C),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: const Icon(Icons.delete_rounded, color: Colors.white),
+      ),
+      child: ExpenseTile(expense: expense, onTap: () => _editExpense(expense)),
+    );
+  }
 
-            const SizedBox(height: 5),
-
-            Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+  Widget _emptyState(ColorScheme scheme) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+        child: Column(
+          children: [
+            Icon(
+              Icons.savings_rounded,
+              size: 44,
+              color: scheme.primary.withValues(alpha: 0.7),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'No expenses yet',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Tap “Add” to record your first expense.\nSmall habits, big clarity.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13.5,
+                color: scheme.onSurfaceVariant,
+                height: 1.4,
+              ),
+            ),
           ],
         ),
       ),
