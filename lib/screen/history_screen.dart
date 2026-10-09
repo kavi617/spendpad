@@ -98,8 +98,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       context,
       MaterialPageRoute(builder: (_) => AddExpenseScreen(expense: expense)),
     );
-    if (result is Expense) {
-      await DatabaseService.updateExpense(result);
+    if (result == true) {
       await _load();
     }
   }
@@ -136,8 +135,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final filtered = _filtered;
     final months = _availableMonths;
 
-    if (_selectedMonth != null &&
-        !months.any((m) => m == _selectedMonth)) {
+    if (_selectedMonth != null && !months.any((m) => m == _selectedMonth)) {
       _selectedMonth = null;
     }
 
@@ -149,10 +147,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
         final day = DateTime(e.date.year, e.date.month, e.date.day);
         if (seen.add(day)) {
           final dayTotal = filtered
-              .where((x) =>
-                  x.date.year == day.year &&
-                  x.date.month == day.month &&
-                  x.date.day == day.day)
+              .where(
+                (x) =>
+                    x.date.year == day.year &&
+                    x.date.month == day.month &&
+                    x.date.day == day.day,
+              )
               .fold<double>(0, (sum, x) => sum + x.amount);
           entries.add(_Entry.header(day, dayTotal));
         }
@@ -183,7 +183,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
               height: 44,
               child: ListView(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 6,
+                ),
                 children: [
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
@@ -216,8 +219,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     isExpanded: true,
                     isDense: true,
                     decoration: const InputDecoration(
-                      contentPadding:
-                          EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
                     ),
                     items: _categories
                         .map(
@@ -238,14 +243,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     isExpanded: true,
                     isDense: true,
                     decoration: const InputDecoration(
-                      contentPadding:
-                          EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
                     ),
                     items: ['Newest', 'Oldest', 'Highest', 'Lowest']
-                        .map((s) => DropdownMenuItem<String>(
-                              value: s,
-                              child: Text(s),
-                            ))
+                        .map(
+                          (s) => DropdownMenuItem<String>(
+                            value: s,
+                            child: Text(s),
+                          ),
+                        )
                         .toList(),
                     onChanged: (value) => setState(() => _sortOption = value!),
                   ),
@@ -376,14 +385,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
 }
 
 class _Entry {
-  _Entry.item(this.expense)
-      : isHeader = false,
-        day = null,
-        dayTotal = null;
+  _Entry.item(this.expense) : isHeader = false, day = null, dayTotal = null;
 
-  _Entry.header(this.day, this.dayTotal)
-      : isHeader = true,
-        expense = null;
+  _Entry.header(this.day, this.dayTotal) : isHeader = true, expense = null;
 
   final bool isHeader;
   final Expense? expense;

@@ -34,8 +34,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
       builder: (context) => AlertDialog(
         title: Text('Delete "${category.name}"?'),
         content: const Text(
-          'Existing expenses keep this category name, but it will no longer '
-          'be offered when adding new ones.',
+          'Existing expenses in this category will be moved to Other.',
         ),
         actions: [
           TextButton(

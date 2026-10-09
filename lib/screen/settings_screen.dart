@@ -81,7 +81,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           skipped++;
           continue;
         }
-        await box.put(expense.id, expense);
+        await DatabaseService.addExpense(expense);
         added++;
       }
 
@@ -176,8 +176,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (selected == null || selected == AppFormat.symbol) return;
 
-    final settings = await SettingsService.openBox();
-    await settings.put('currency', selected);
+    await SettingsService.setValue('currency', selected);
     setState(() => AppFormat.symbol = selected);
     if (!mounted) return;
     _showMessage('Currency set to $selected');
@@ -309,15 +308,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _groupCard(ColorScheme scheme, {required List<Widget> tiles}) {
-    return Card(
-      child: Column(children: tiles),
-    );
+    return Card(child: Column(children: tiles));
   }
 
-  Widget _divider(ColorScheme scheme) => Divider(
-        indent: 56,
-        color: scheme.outlineVariant.withValues(alpha: 0.5),
-      );
+  Widget _divider(ColorScheme scheme) =>
+      Divider(indent: 56, color: scheme.outlineVariant.withValues(alpha: 0.5));
 
   Widget _tile({
     required IconData icon,

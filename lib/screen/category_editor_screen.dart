@@ -53,9 +53,9 @@ class _CategoryEditorScreenState extends State<CategoryEditorScreen> {
     final name = nameController.text.trim();
 
     if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Category name required')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Category name required')));
       return;
     }
 
@@ -66,13 +66,28 @@ class _CategoryEditorScreenState extends State<CategoryEditorScreen> {
       isDefault: widget.category?.isDefault ?? false,
     );
 
-    if (widget.category == null) {
-      await CategoryService.addCategory(category);
-    } else {
-      widget.category!.name = category.name;
-      widget.category!.iconCode = category.iconCode;
-      widget.category!.iconFamily = category.iconFamily;
-      await widget.category!.save();
+    try {
+      if (widget.category == null) {
+        await CategoryService.addCategory(category);
+      } else {
+        await CategoryService.renameCategory(widget.category!, category.name);
+        widget.category!
+          ..iconCode = category.iconCode
+          ..iconFamily = category.iconFamily;
+        await widget.category!.save();
+      }
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            error is ArgumentError
+                ? error.message.toString()
+                : 'Category could not be saved. Please try again.',
+          ),
+        ),
+      );
+      return;
     }
 
     if (!mounted) return;
@@ -86,8 +101,9 @@ class _CategoryEditorScreenState extends State<CategoryEditorScreen> {
     final previewIcon = name.isEmpty
         ? Icons.category_rounded
         : IconHelper.iconFor(name);
-    final previewColor =
-        name.isEmpty ? scheme.onSurfaceVariant : IconHelper.colorFor(name);
+    final previewColor = name.isEmpty
+        ? scheme.onSurfaceVariant
+        : IconHelper.colorFor(name);
 
     return Scaffold(
       appBar: AppBar(

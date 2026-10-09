@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/expense.dart';
 import '../models/category.dart';
 import '../services/category_service.dart';
+import '../services/database_service.dart';
 import '../utils/app_format.dart';
 import '../utils/icon_helper.dart';
 
@@ -22,6 +23,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   List<Category> _categories = [];
   String? _selectedCategory;
   DateTime _selectedDate = DateTime.now();
+  bool _saving = false;
 
   bool get _isEditing => widget.expense != null;
 
@@ -76,7 +78,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     }
 
     final amount = double.tryParse(raw);
-    if (amount == null) {
+    if (amount == null || !amount.isFinite) {
       _showMessage('Enter a valid amount');
       return;
     }
@@ -90,16 +92,29 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     }
 
     final expense = Expense(
-      id: widget.expense?.id ??
-          DateTime.now().millisecondsSinceEpoch.toString(),
+      id: widget.expense?.id ?? DatabaseService.newExpenseId(),
       category: _selectedCategory!,
       note: _noteController.text.trim(),
       amount: amount,
       date: _selectedDate,
     );
 
-    if (!mounted) return;
-    Navigator.pop(context, expense);
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      if (_isEditing) {
+        await DatabaseService.updateExpense(expense);
+      } else {
+        await DatabaseService.addExpense(expense);
+      }
+      if (mounted) Navigator.pop(context, true);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      _showMessage(
+        'Could not save this expense. Your entry is still here; please try again.',
+      );
+    }
   }
 
   void _showMessage(String message) {
@@ -123,8 +138,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             TextField(
               controller: _amountController,
               autofocus: !_isEditing,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               style: const TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.w800,
@@ -219,8 +235,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                       ),
                     ),
                 ],
-                onChanged: (value) =>
-                    setState(() => _selectedCategory = value),
+                onChanged: (value) => setState(() => _selectedCategory = value),
               ),
             const SizedBox(height: 20),
 
@@ -239,14 +254,18 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               width: double.infinity,
               height: 52,
               child: FilledButton(
-                onPressed: _save,
+                onPressed: _saving ? null : _save,
                 style: FilledButton.styleFrom(
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
                 ),
                 child: Text(
-                  _isEditing ? 'Update expense' : 'Save expense',
+                  _saving
+                      ? 'Saving…'
+                      : _isEditing
+                      ? 'Update expense'
+                      : 'Save expense',
                   style: const TextStyle(
                     fontSize: 15.5,
                     fontWeight: FontWeight.w700,

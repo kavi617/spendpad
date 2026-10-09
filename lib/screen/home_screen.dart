@@ -31,6 +31,7 @@ class _HomePageState extends State<HomePage> {
   String _topCategory = '';
 
   bool _loading = true;
+  String? _loadError;
 
   @override
   void initState() {
@@ -39,40 +40,59 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _load() async {
-    final data = await DatabaseService.getExpenses();
-    await CategoryService.getCategories(); // refreshes manual icon overrides
-    data.sort((a, b) => b.date.compareTo(a.date));
+    try {
+      final data = await DatabaseService.getExpenses();
+      await CategoryService.getCategories(); // refreshes manual icon overrides
+      data.sort((a, b) => b.date.compareTo(a.date));
 
-    final now = DateTime.now();
-    final monthExpenses = ExpenseHelper.inMonth(data, now);
+      final now = DateTime.now();
+      final monthExpenses = ExpenseHelper.inMonth(data, now);
 
-    // Fair comparison: month-to-date vs the SAME days of the previous month.
-    final prevMonth = DateTime(now.year, now.month - 1);
-    final prevElapsed = now.day.clamp(1, ExpenseHelper.daysInMonth(prevMonth));
-    final prevSamePeriod = ExpenseHelper.totalUpTo(data, prevMonth, prevElapsed);
+      // Fair comparison: month-to-date vs the SAME days of the previous month.
+      final prevMonth = DateTime(now.year, now.month - 1);
+      final prevElapsed = now.day.clamp(
+        1,
+        ExpenseHelper.daysInMonth(prevMonth),
+      );
+      final prevSamePeriod = ExpenseHelper.totalUpTo(
+        data,
+        prevMonth,
+        prevElapsed,
+      );
 
-    var topCategory = '';
-    var topAmount = 0.0;
-    ExpenseHelper.categoryTotals(monthExpenses).forEach((name, value) {
-      if (value > topAmount) {
-        topAmount = value;
-        topCategory = name;
-      }
-    });
+      var topCategory = '';
+      var topAmount = 0.0;
+      ExpenseHelper.categoryTotals(monthExpenses).forEach((name, value) {
+        if (value > topAmount) {
+          topAmount = value;
+          topCategory = name;
+        }
+      });
 
-    if (!mounted) return;
-    setState(() {
-      _all = data;
-      _recent = data.take(8).toList();
-      _monthTotal = ExpenseHelper.totalOf(monthExpenses);
-      _todayTotal = ExpenseHelper.getTodayTotal(data);
-      _avgPerDay = ExpenseHelper.averagePerDay(monthExpenses, now);
-      _monthCount = monthExpenses.length;
-      _monthDelta = ExpenseHelper.percentChange(_monthTotal, prevSamePeriod);
-      _prevMonthLabel = AppFormat.shortMonth(prevMonth);
-      _topCategory = topCategory;
-      _loading = false;
-    });
+      if (!mounted) return;
+      setState(() {
+        _all = data;
+        _recent = data.take(8).toList();
+        _monthTotal = ExpenseHelper.totalOf(monthExpenses);
+        _todayTotal = ExpenseHelper.getTodayTotal(data);
+        _avgPerDay = ExpenseHelper.averagePerDay(monthExpenses, now);
+        _monthCount = monthExpenses.length;
+        _monthDelta = ExpenseHelper.percentChange(_monthTotal, prevSamePeriod);
+        _prevMonthLabel = AppFormat.shortMonth(prevMonth);
+        _topCategory = topCategory;
+        _loading = false;
+        _loadError = null;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        if (_all.isEmpty) {
+          _loadError =
+              'Your saved expenses could not be loaded. Please try again.';
+        }
+      });
+    }
   }
 
   Future<void> _addExpense() async {
@@ -80,8 +100,7 @@ class _HomePageState extends State<HomePage> {
       context,
       MaterialPageRoute(builder: (_) => const AddExpenseScreen()),
     );
-    if (result is Expense) {
-      await DatabaseService.addExpense(result);
+    if (result == true) {
       await _load();
       if (!mounted) return;
       ScaffoldMessenger.of(context)
@@ -95,8 +114,7 @@ class _HomePageState extends State<HomePage> {
       context,
       MaterialPageRoute(builder: (_) => AddExpenseScreen(expense: expense)),
     );
-    if (result is Expense) {
-      await DatabaseService.updateExpense(result);
+    if (result == true) {
       await _load();
     }
   }
@@ -126,74 +144,103 @@ class _HomePageState extends State<HomePage> {
     final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _addExpense,
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('Add'),
-      ),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 96),
-          children: [
-            SizedBox(height: MediaQuery.paddingOf(context).top + 12),
-            Text(
-              AppFormat.greeting(),
-              style: TextStyle(
-                fontSize: 14,
-                color: scheme.onSurfaceVariant,
-                fontWeight: FontWeight.w500,
-              ),
+      floatingActionButton: _loading || _loadError != null
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: _addExpense,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Add'),
             ),
-            const SizedBox(height: 2),
-            const Text(
-              'SpendPad',
-              style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: -0.5),
-            ),
-            const SizedBox(height: 16),
-            StaggerIn(index: 0, child: _monthCard(scheme)),
-            const SizedBox(height: 12),
-            StaggerIn(index: 1, child: _statsRow(scheme)),
-            const SizedBox(height: 24),
-            StaggerIn(
-              index: 2,
-              child: _sectionHeader(
-                title: 'Recent activity',
-                actionLabel: _all.length > _recent.length ? 'View all' : null,
-                onAction: widget.onSeeAll,
-              ),
-            ),
-            const SizedBox(height: 10),
-            if (_loading)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(32),
-                  child: CircularProgressIndicator(),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _loadError != null
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(28),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.sync_problem_rounded,
+                      color: scheme.primary,
+                      size: 40,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      _loadError!,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: scheme.onSurfaceVariant),
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton(
+                      onPressed: _load,
+                      child: const Text('Try again'),
+                    ),
+                  ],
                 ),
-              )
-            else if (_recent.isEmpty)
-              StaggerIn(index: 3, child: _emptyState(scheme))
-            else
-              ...[
-                for (var i = 0; i < _recent.length; i++)
-                  StaggerIn(
-                    index: 3 + i,
-                    child: _dismissibleTile(_recent[i]),
+              ),
+            )
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 96),
+                children: [
+                  SizedBox(height: MediaQuery.paddingOf(context).top + 12),
+                  Text(
+                    AppFormat.greeting(),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: scheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-              ],
-            if (_all.length > _recent.length) ...[
-              const SizedBox(height: 4),
-              Center(
-                child: TextButton(
-                  onPressed: widget.onSeeAll,
-                  child: Text('View all ${_all.length} transactions'),
-                ),
+                  const SizedBox(height: 2),
+                  const Text(
+                    'SpendPad',
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  StaggerIn(index: 0, child: _monthCard(scheme)),
+                  const SizedBox(height: 12),
+                  StaggerIn(index: 1, child: _statsRow(scheme)),
+                  const SizedBox(height: 24),
+                  StaggerIn(
+                    index: 2,
+                    child: _sectionHeader(
+                      title: 'Recent activity',
+                      actionLabel: _all.length > _recent.length
+                          ? 'View all'
+                          : null,
+                      onAction: widget.onSeeAll,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  if (_recent.isEmpty)
+                    StaggerIn(index: 3, child: _emptyState(scheme))
+                  else ...[
+                    for (var i = 0; i < _recent.length; i++)
+                      StaggerIn(
+                        index: 3 + i,
+                        child: _dismissibleTile(_recent[i]),
+                      ),
+                  ],
+                  if (_all.length > _recent.length) ...[
+                    const SizedBox(height: 4),
+                    Center(
+                      child: TextButton(
+                        onPressed: widget.onSeeAll,
+                        child: Text('View all ${_all.length} transactions'),
+                      ),
+                    ),
+                  ],
+                ],
               ),
-            ],
-          ],
-        ),
-      ),
+            ),
     );
   }
 
@@ -203,7 +250,9 @@ class _HomePageState extends State<HomePage> {
     final deltaText = (delta == null || tooEarly)
         ? null
         : '${delta <= 0 ? '↓' : '↑'} ${delta.abs().toStringAsFixed(0)}% vs $_prevMonthLabel so far';
-    final deltaColor = delta != null && delta > 0 ? scheme.error : scheme.primary;
+    final deltaColor = delta != null && delta > 0
+        ? scheme.error
+        : scheme.primary;
 
     return Container(
       width: double.infinity,
@@ -238,8 +287,11 @@ class _HomePageState extends State<HomePage> {
           const SizedBox(height: 10),
           Row(
             children: [
-              Icon(Icons.today_rounded,
-                  size: 15, color: scheme.onPrimaryContainer.withValues(alpha: 0.7)),
+              Icon(
+                Icons.today_rounded,
+                size: 15,
+                color: scheme.onPrimaryContainer.withValues(alpha: 0.7),
+              ),
               const SizedBox(width: 5),
               Text(
                 '${AppFormat.money(_todayTotal)} today',
@@ -250,8 +302,11 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               const SizedBox(width: 14),
-              Icon(Icons.insights_rounded,
-                  size: 15, color: scheme.onPrimaryContainer.withValues(alpha: 0.7)),
+              Icon(
+                Icons.insights_rounded,
+                size: 15,
+                color: scheme.onPrimaryContainer.withValues(alpha: 0.7),
+              ),
               const SizedBox(width: 5),
               Text(
                 '${AppFormat.money(_avgPerDay)}/day avg',
@@ -268,14 +323,21 @@ class _HomePageState extends State<HomePage> {
                 ? const SizedBox.shrink()
                 : Container(
                     key: ValueKey(deltaText),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
                       color: scheme.surfaceContainerLowest,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       deltaText,
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: deltaColor),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: deltaColor,
+                      ),
                     ),
                   ),
           ),

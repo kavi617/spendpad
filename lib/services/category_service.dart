@@ -9,6 +9,7 @@ class CategoryService {
   static const String boxName = "categories";
 
   static Future<Box<Category>> openBox() async {
+    if (Hive.isBoxOpen(boxName)) return Hive.box<Category>(boxName);
     return await Hive.openBox<Category>(boxName);
   }
 
@@ -40,9 +41,7 @@ class CategoryService {
     final box = categoryBox ?? await openBox();
     final expenseBox = await DatabaseService.openExpenseBox();
 
-    final existing = box.values
-        .map((c) => c.name.trim().toLowerCase())
-        .toSet();
+    final existing = box.values.map((c) => c.name.trim().toLowerCase()).toSet();
 
     final missing = <String>[];
     for (final expense in expenseBox.values) {
@@ -70,27 +69,105 @@ class CategoryService {
 
   static Future<void> addCategory(Category category) async {
     final box = await openBox();
-
+    final normalized = category.name.trim().toLowerCase();
+    if (box.values.any(
+      (existing) => existing.name.trim().toLowerCase() == normalized,
+    )) {
+      throw ArgumentError('A category with this name already exists.');
+    }
     await box.add(category);
   }
 
+  static Future<void> renameCategory(Category category, String name) async {
+    final oldName = category.name;
+    final newName = name.trim();
+    if (newName.isEmpty) throw ArgumentError('Category name is required.');
+    final box = await openBox();
+    if (box.values.any(
+      (other) =>
+          !identical(other, category) &&
+          other.name.trim().toLowerCase() == newName.toLowerCase(),
+    )) {
+      throw ArgumentError('A category with this name already exists.');
+    }
+    try {
+      await DatabaseService.replaceExpenseCategory(oldName, newName);
+      category.name = newName;
+      await category.save();
+    } catch (_) {
+      // Keep transaction labels aligned if saving the category record fails.
+      category.name = oldName;
+      await DatabaseService.replaceExpenseCategory(newName, oldName);
+      rethrow;
+    }
+  }
+
   static Future<void> deleteCategory(Category category) async {
-    await category.delete();
+    final expenseBox = await DatabaseService.openExpenseBox();
+    final hasAffected = expenseBox.values.any(
+      (e) => e.category == category.name,
+    );
+    if (hasAffected) {
+      final box = await openBox();
+      if (!box.values.any((c) => c.name.toLowerCase() == 'other')) {
+        await box.add(
+          Category(
+            name: 'Other',
+            iconCode: IconHelper.iconFor('Other').codePoint,
+            iconFamily: 'MaterialIcons',
+          ),
+        );
+      }
+      await DatabaseService.replaceExpenseCategory(category.name, 'Other');
+    }
+    try {
+      await category.delete();
+    } catch (_) {
+      if (hasAffected) {
+        await DatabaseService.replaceExpenseCategory('Other', category.name);
+      }
+      rethrow;
+    }
   }
 
   static Future<void> createDefaultCategories() async {
     final box = await openBox();
 
     final defaults = [
-      Category(name: "Food", iconCode: Icons.restaurant_rounded.codePoint, iconFamily: "MaterialIcons", isDefault: true),
+      Category(
+        name: "Food",
+        iconCode: Icons.restaurant_rounded.codePoint,
+        iconFamily: "MaterialIcons",
+        isDefault: true,
+      ),
 
-      Category(name: "Transport", iconCode: Icons.directions_car_rounded.codePoint, iconFamily: "MaterialIcons", isDefault: true),
+      Category(
+        name: "Transport",
+        iconCode: Icons.directions_car_rounded.codePoint,
+        iconFamily: "MaterialIcons",
+        isDefault: true,
+      ),
 
-      Category(name: "Shopping", iconCode: Icons.shopping_bag_rounded.codePoint, iconFamily: "MaterialIcons", isDefault: true),
+      Category(
+        name: "Shopping",
+        iconCode: Icons.shopping_bag_rounded.codePoint,
+        iconFamily: "MaterialIcons",
+        isDefault: true,
+      ),
 
-      Category(name: "Bills", iconCode: Icons.receipt_long_rounded.codePoint, iconFamily: "MaterialIcons", isDefault: true),
+      Category(
+        name: "Bills",
+        iconCode: Icons.receipt_long_rounded.codePoint,
+        iconFamily: "MaterialIcons",
+        isDefault: true,
+      ),
 
-      Category(name: "Medical", iconCode: Icons.medical_services_rounded.codePoint, iconFamily: "MaterialIcons", isDefault: true),
+      Category(
+        name: "Medical",
+        iconCode: Icons.medical_services_rounded.codePoint,
+        iconFamily: "MaterialIcons",
+        isDefault: true,
+      ),
     ];
 
     await box.addAll(defaults);
