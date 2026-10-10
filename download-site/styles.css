@@ -98,3 +98,144 @@ footer{padding:24px 0 16px}.footer-inner>span,.footer-inner>a:last-child,.footer
 
 /* Keep page content readable if the animation module fails to load. */
 .reveal{opacity:1;transform:none}
+
+/* Mobile refinements: comfortable spacing, readable metadata, and touch-sized controls. */
+@media(max-width:600px){
+  html{scroll-padding-top:72px}
+  .wrap{width:calc(100% - 36px)}
+  .topbar{height:64px;padding-inline:18px}
+  nav{top:63px;padding:14px 18px 20px;gap:8px}
+  nav a{min-height:46px;display:flex;align-items:center;padding:0 10px}
+  nav .nav-download{justify-content:center;margin-top:3px}
+  .hero{padding:38px 0 48px;gap:4px}
+  .hero h1{font-size:clamp(36px,10vw,46px);letter-spacing:-2px;line-height:1.06}
+  .eyebrow{font-size:9px;letter-spacing:1.35px;margin-bottom:14px}
+  .lede{font-size:14px;line-height:1.7;margin-bottom:20px}
+  .hero-actions{display:grid;grid-template-columns:1fr;gap:7px}
+  .hero-actions .button.primary{width:100%;min-height:50px;justify-content:center}
+  .hero-explore{min-height:42px;display:flex;align-items:center;justify-content:center}
+  .release-line{flex-wrap:wrap;gap:7px 9px;margin-top:17px;font-size:10px}
+  .hero-preview{height:370px;margin-top:6px;overflow:hidden}
+  .hero-preview:before{width:min(82vw,320px);height:min(82vw,320px);right:50%;top:9%;transform:translateX(50%)}
+  .preview-note{top:8px;font-size:8px;letter-spacing:.7px}
+  .device{width:174px}
+  .device-screen{height:351px;min-height:351px}
+  .float-tag{gap:7px;padding:8px 9px;border-radius:11px}
+  .float-tag small{font-size:8px}.float-tag b{font-size:9px}
+  .tag-icon{width:27px;height:27px}
+  .tag-top{right:0;top:66px}.tag-bottom{left:0;bottom:34px}
+  .preview-next{right:3px;bottom:40px;width:40px;height:40px}
+  .entry-demo-section,.feature-band,.install-section{padding-block:48px}
+  .entry-demo-layout{gap:20px}
+  .entry-demo-copy h2,.feature-intro h2,.install-layout h2{font-size:32px;letter-spacing:-1.5px}
+  .entry-demo-copy>p:not(.eyebrow),.feature-intro>p:not(.eyebrow){font-size:13px;line-height:1.7}
+  .entry-demo-copy ul{grid-template-columns:1fr;gap:6px;margin-top:13px}
+  .entry-demo-copy li{font-size:11px}
+  .entry-demo-card{padding:18px 15px}
+  .demo-fields{grid-template-columns:1fr;gap:10px}
+  .demo-categories{gap:7px}
+  .demo-categories button{min-height:44px;padding-inline:6px}
+  .feature-layout{gap:20px}
+  .feature-detail{padding:14px 12px}
+  .feature-tab,.feature-tab:last-child{min-height:44px;min-width:94px;padding-inline:10px}
+  .feature-description{gap:11px;min-height:0;padding:13px 2px 2px}
+  .feature-description p{font-size:12px}
+  .privacy-section{padding:12px 0 48px}
+  .privacy-card{grid-template-columns:40px 1fr;gap:13px;padding:22px 19px;border-radius:18px}
+  .privacy-symbol{width:40px;height:40px;border-radius:12px;font-size:21px}
+  .privacy-card h2{font-size:23px;letter-spacing:-1px;line-height:1.15}
+  .privacy-card>p{grid-column:1/-1;font-size:12px}
+  .download-section{padding:0 0 50px;gap:20px}
+  .download-copy h2{font-size:40px;letter-spacing:-2px}
+  .download-copy>p:not(.eyebrow){font-size:13px}
+  .download-facts{gap:7px;margin-top:18px}
+  .download-facts span{font-size:10px;padding:7px 9px}
+  .download-card{padding:21px 17px}
+  .download-cta{min-height:48px}
+  .install-layout{gap:12px}
+  .install-steps li{gap:13px;padding:14px 0}
+  .install-steps b{font-size:12px}
+  .install-steps p{font-size:11px}
+  .faq-section{padding:50px 0}
+  .faq-section .section-heading{margin-bottom:17px}
+  .faq-section .section-heading h2{font-size:30px;letter-spacing:-1.4px}
+  .faq-list summary{min-height:54px;gap:12px;padding:13px 2px;font-size:12px}
+  .faq-list details p{font-size:12px;padding:0 12px 16px 2px}
+  footer{padding:20px 0 15px}
+  .footer-inner{display:grid;grid-template-columns:1fr auto;gap:14px}
+  .footer-inner>a:last-child{font-size:10px}
+  .footer-bottom{font-size:9px;gap:10px}
+  .lightbox{padding:42px 32px}
+  .lightbox-arrow.prev{left:-28px}.lightbox-arrow.next{right:-28px}
+}
+@media(max-width:360px){
+  .wrap{width:calc(100% - 28px)}
+  .hero h1{font-size:35px}
+  .hero-preview{height:345px}
+  .device{width:158px}
+  .device-screen{height:318px;min-height:318px}
+  .float-tag{max-width:145px}
+  .feature-tab,.feature-tab:last-child{min-width:86px;padding-inline:8px}
+  .download-copy h2{font-size:36px}
+  .footer-inner{grid-template-columns:1fr}
+}
+
+/* The mobile hero becomes a deliberate vertical sequence: copy, actions, then preview. */
+@media(max-width:600px){
+  .hero{display:flex;flex-direction:column;align-items:stretch;gap:0;padding-top:30px;padding-bottom:32px}
+  .hero-copy{width:100%;max-width:none}
+  .hero h1{max-width:12ch;margin-bottom:16px;font-size:clamp(36px,9.5vw,46px)}
+  .lede{max-width:36ch;margin-bottom:17px}
+  .hero-actions{display:flex;flex-direction:column;align-items:stretch;gap:5px}
+  .hero-actions .button.primary{width:100%;min-height:52px}
+  .hero-explore{min-height:44px}
+  .release-line{margin-top:13px;line-height:1.5}
+  .hero-preview{order:2;width:100%;height:390px;margin-top:22px;border-radius:22px}
+  .device{width:166px}
+  .device-screen{height:334px;min-height:334px}
+  .tag-top{right:8px;top:82px}.tag-bottom{left:8px;bottom:42px}
+  .preview-next{right:10px;bottom:45px}
+}
+
+/* Prevent intrinsic grid widths from pushing mobile sections off-screen. */
+@media(max-width:800px){
+  html,body{max-width:100%;overflow-x:hidden}
+  main,.wrap,.entry-demo-layout,.feature-layout,.install-layout,.download-section{min-width:0}
+  .entry-demo-section .wrap,.feature-band .wrap,.privacy-section .wrap,.install-section .wrap,.download-section.wrap,.faq-section.wrap{width:min(100% - 40px,600px)}
+  .entry-demo-layout,.feature-layout,.install-layout,.download-section{grid-template-columns:minmax(0,1fr)}
+  .entry-demo-card,.entry-demo,.feature-intro,.feature-detail,.privacy-card,.download-copy,.download-card,.install-steps,.faq-list{width:100%;min-width:0;max-width:100%}
+  .entry-demo-card{padding:clamp(16px,5vw,24px)}
+  .entry-demo{min-width:0}
+  .demo-fields{grid-template-columns:minmax(0,1fr);min-width:0}
+  .demo-amount,.demo-note,.demo-categories,.demo-save{width:100%;min-width:0}
+  .demo-categories button{min-width:0;flex:1 1 0}
+  .feature-layout{gap:24px}
+  .feature-intro h2{max-width:14ch}
+  .feature-detail{overflow:hidden}
+  .feature-tabs{min-width:0;max-width:100%}
+  .feature-description>div{min-width:0}
+  .feature-description p{overflow-wrap:anywhere}
+  .privacy-card{grid-template-columns:42px minmax(0,1fr);padding:clamp(20px,5vw,30px)}
+  .privacy-card>p{grid-column:1/-1}
+  .privacy-card h2{overflow-wrap:anywhere}
+  .download-section{gap:24px}
+}
+@media(max-width:600px){
+  .entry-demo-section .wrap,.feature-band .wrap,.privacy-section .wrap,.install-section .wrap,.download-section.wrap,.faq-section.wrap{width:calc(100% - 36px)}
+  .hero{overflow:hidden}
+  .hero-preview{flex:0 0 390px;min-width:0}
+  .preview-note{left:12px;right:12px;gap:8px}
+  .preview-note span:last-child{max-width:65%;text-align:right}
+  .float-tag{max-width:calc(50% - 18px)}
+  .float-tag>span:last-child{min-width:0}
+  .float-tag b{overflow-wrap:anywhere}
+  .demo-success{width:100%;min-width:0}
+  .demo-amount input{min-width:0;width:100%}
+  .feature-tabs{overflow-x:auto}
+  .privacy-card{grid-template-columns:40px minmax(0,1fr)}
+  .download-facts span{max-width:100%;overflow-wrap:anywhere}
+}
+
+/* Center the FAQ heading block while keeping its text left aligned. */
+.faq-section .section-heading{justify-content:center}
+.faq-section .section-heading>div{width:min(100%,760px);margin-inline:auto;text-align:left}
