@@ -4,8 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f6f8f5">
-  <meta name="description" content="SpendPad keeps everyday spending clear, organized, and in your hands.">
-  <title>SpendPad — Everyday spending, clearly in view</title>
+  <meta name="description" content="Track everyday expenses, see category and monthly spending patterns, and keep your data on your device with SpendPad.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="SpendPad — Simple offline expense tracking">
+  <meta property="og:description" content="Track everyday expenses, see category and monthly spending patterns, and keep your data on your device.">
+  <meta name="twitter:card" content="summary">
+  <title>SpendPad — Simple offline expense tracking</title>
   <link rel="icon" href="assets/app_icon.png">
   <link rel="stylesheet" href="styles.css">
   <script type="module" src="script.js"></script>
@@ -14,49 +18,66 @@
   <header class="topbar">
     <a class="brand" href="#showcase" aria-label="SpendPad home"><img src="assets/app_icon.png" alt=""><span>SpendPad</span></a>
     <button class="menu-toggle" aria-expanded="false" aria-controls="nav" aria-label="Open navigation"><span></span><span></span></button>
-    <nav id="nav" aria-label="Main navigation"><a href="#showcase">Showcase</a><a href="#features">Features</a><a href="#screenshots">Screenshots</a><a class="nav-download" href="#download">Get the app <span>↗</span></a></nav>
+    <nav id="nav" aria-label="Main navigation"><a href="#showcase">Showcase</a><a href="#features">Features</a><a href="#try-it">Try it</a><a class="nav-download" data-apk href="#download">Get the app <span>↗</span></a></nav>
   </header>
   <main>
     <section class="hero wrap" id="showcase">
       <div class="hero-copy reveal">
-        <p class="eyebrow"><span class="live-dot"></span> YOUR MONEY, YOUR DEVICE</p>
-        <h1>Everyday spending,<br><em>clearly in view.</em></h1>
-        <p class="lede">A thoughtful place to record expenses, understand your habits, and keep your financial data close.</p>
-        <div class="hero-actions"><a class="button primary" data-apk href="#download">Download APK <span>↓</span></a><a class="button secondary" href="#features">Explore features <span>↘</span></a></div>
-        <div class="release-line"><span class="release-dot"></span><span data-version>Version 1.0.0</span><span class="line-divider"></span><span data-compatibility>Android 5.0 and up</span></div>
+        <p class="eyebrow"><span class="live-dot"></span> OFFLINE EXPENSE TRACKING</p>
+        <h1>Track your spending.<br><em>See the full picture.</em></h1>
+        <p class="lede">Add everyday expenses, organize them by category, and see monthly patterns at a glance. No account needed; your data stays on your device.</p>
+        <div class="hero-actions"><a class="button primary" data-apk href="#download">Download APK <span>↓</span></a><a class="hero-explore" href="#try-it">Try adding an expense <span>↘</span></a></div>
+        <div class="release-line"><span class="release-dot"></span><span data-version>Version 1.0.0</span><span class="line-divider"></span><span data-compatibility>Android 7.0 and up</span><span class="line-divider"></span><span>Stored on device</span></div>
       </div>
-      <div class="hero-preview reveal" aria-label="SpendPad app screenshots">
-        <div class="preview-note"><span>01 / 05</span><span>YOUR SPENDING, AT A GLANCE</span></div>
-        <div class="device"><div class="device-screen"><img id="hero-shot" src="assets/screenshots/01-home.png" alt="SpendPad home dashboard showing monthly spending and recent activity"></div></div>
-        <div class="float-tag tag-top"><span class="tag-icon">↗</span><span><small>Insights</small><b>Patterns, made clear</b></span></div>
-        <div class="float-tag tag-bottom"><span class="tag-icon mint">✓</span><span><small>Private by design</small><b>Stored on your device</b></span></div>
-        <button class="preview-next" aria-label="Show next screen">→</button>
+      <div class="hero-preview reveal" aria-label="SpendPad app screen preview">
+        <div class="preview-note"><span>01 / 05</span><span>SWIPE TO EXPLORE · TAP TO ZOOM</span></div>
+        <div class="device"><button class="device-screen" type="button" aria-label="Open home dashboard screenshot"><img id="hero-shot" src="assets/screenshots/01-home.png" alt="SpendPad home dashboard showing monthly spending and recent activity" width="320" height="640" decoding="async" fetchpriority="high"></button></div>
+        <div class="float-tag tag-top"><span class="tag-icon">↗</span><span><small>Monthly reports</small><b>Spot spending patterns</b></span></div>
+        <div class="float-tag tag-bottom"><span class="tag-icon mint">⌂</span><span><small>No account needed</small><b>Your data stays on device</b></span></div>
+        <button class="preview-next" aria-label="Next app screen">→</button>
       </div>
       <a class="scroll-cue" href="#features"><span></span> SCROLL TO EXPLORE</a>
     </section>
 
-    <section class="feature-band" id="features"><div class="wrap feature-layout">
-      <div class="feature-intro reveal"><p class="eyebrow">A LITTLE MORE CLARITY</p><h2>Know where it goes.<br><em>Keep it simple.</em></h2><p>SpendPad gives everyday expenses a calm, organized home. Choose a feature to see how it fits into the bigger picture.</p><div class="feature-controls"><button data-feature-prev aria-label="Previous feature">←</button><span data-feature-count>01 <i>/ 04</i></span><button data-feature-next aria-label="Next feature">→</button></div></div>
-      <div class="feature-detail reveal"><div class="feature-tabs" role="tablist" aria-label="SpendPad features">
-        <button class="feature-tab active" role="tab" aria-selected="true" data-index="0"><span>01</span><b>Track spending</b><i>⌁</i></button>
-        <button class="feature-tab" role="tab" aria-selected="false" data-index="1"><span>02</span><b>See your patterns</b><i>⌁</i></button>
-        <button class="feature-tab" role="tab" aria-selected="false" data-index="2"><span>03</span><b>Make it yours</b><i>⌁</i></button>
-        <button class="feature-tab" role="tab" aria-selected="false" data-index="3"><span>04</span><b>Keep your data</b><i>⌁</i></button>
-      </div><div class="feature-description" aria-live="polite"><span class="feature-mark">✳</span><div><h3 data-feature-title>Track spending</h3><p data-feature-description>Add, edit, and review expenses with categories, notes, and dates. A recent activity list keeps the latest entries close.</p></div></div></div>
+    <section class="entry-demo-section" id="try-it"><div class="wrap entry-demo-layout">
+      <div class="entry-demo-copy reveal"><p class="eyebrow">TRY A SAMPLE</p><h2>Add an expense<br><em>in a few taps.</em></h2><p>Enter an amount, pick a category, and add a note if you like. Try the flow below—nothing is stored or sent.</p><ul><li>Quick amount entry</li><li>Simple categories</li><li>Optional note</li></ul></div>
+      <div class="entry-demo-card reveal"><form class="entry-demo" id="entry-demo" aria-label="Interactive sample expense entry">
+        <div class="demo-fields">
+          <p class="demo-kicker">QUICK ENTRY</p><h2>Add expense</h2>
+          <label class="demo-amount-label" for="demo-amount">Amount</label>
+          <div class="demo-amount"><span>₹</span><input id="demo-amount" type="number" inputmode="decimal" min="0.01" step="0.01" value="420" aria-label="Expense amount in rupees"></div>
+          <span class="demo-label">Category</span>
+          <div class="demo-categories" role="group" aria-label="Choose expense category"><button type="button" class="selected" aria-pressed="true">Food</button><button type="button" aria-pressed="false">Travel</button><button type="button" aria-pressed="false">Bills</button></div>
+          <label class="demo-label" for="demo-note">Note <span>Optional</span></label>
+          <input class="demo-note" id="demo-note" type="text" value="Lunch with friends" maxlength="40">
+          <div class="demo-date"><span>DATE</span><b>Today</b></div>
+          <button class="demo-save" type="submit">Add sample expense <span>→</span></button>
+          <p class="demo-footnote">Demo only · Nothing is saved</p>
+        </div>
+        <div class="demo-success" hidden><span class="success-check">✓</span><p class="demo-kicker">SAMPLE ADDED</p><h2>Expense saved</h2><p><b data-demo-saved-amount>₹420</b> · <span data-demo-saved-category>Food</span></p><p class="demo-disclaimer">Demo only · nothing was saved</p><button class="demo-again" type="button">Try another</button></div>
+      </form></div>
     </div></section>
 
-    <section class="gallery-section wrap" id="screenshots"><div class="section-heading reveal"><div><p class="eyebrow">A CLOSER LOOK</p><h2>Made for the everyday.</h2></div><p>Real SpendPad screens, ready to explore.<br>Tap any view to take a closer look.</p></div>
-      <div class="gallery reveal"><div class="gallery-stage"><button class="gallery-arrow prev" aria-label="Previous screenshot">←</button><button class="gallery-image" aria-label="Enlarge selected screenshot"><img data-gallery-image src="assets/screenshots/01-home.png" alt="SpendPad home dashboard"></button><button class="gallery-arrow next" aria-label="Next screenshot">→</button><div class="gallery-caption"><span data-gallery-caption>Home dashboard</span><span data-gallery-counter>01 / 05</span></div></div><div class="thumbnails" role="tablist" aria-label="Choose app screen"></div></div>
-    </section>
 
-    <section class="privacy-section"><div class="wrap privacy-card reveal"><div class="privacy-symbol">⌂</div><div><p class="eyebrow">YOUR DATA STAYS YOURS</p><h2>Offline by nature.<br><em>Yours by design.</em></h2></div><p>Expenses are stored on your device. No account is needed. When you want a copy, export a JSON backup and keep it wherever you choose.</p></div></section>
+    <section class="feature-band" id="features"><div class="wrap feature-layout">
+      <div class="feature-intro reveal"><p class="eyebrow">MADE FOR EVERYDAY SPENDING</p><h2>Know where<br><em>your money goes.</em></h2><p>Tap a feature to see how SpendPad helps with everyday expenses.</p><div class="feature-controls"><button data-feature-prev aria-label="Previous feature">←</button><span data-feature-count>01 <i>/ 04</i></span><button data-feature-next aria-label="Next feature">→</button></div></div>
+      <div class="feature-detail reveal"><div class="feature-tabs" role="tablist" aria-label="SpendPad features">
+        <button class="feature-tab active" role="tab" aria-selected="true" aria-controls="feature-panel" tabindex="0" data-index="0"><span>01</span><b>Expenses</b></button>
+        <button class="feature-tab" role="tab" aria-selected="false" aria-controls="feature-panel" tabindex="-1" data-index="1"><span>02</span><b>Reports</b></button>
+        <button class="feature-tab" role="tab" aria-selected="false" aria-controls="feature-panel" tabindex="-1" data-index="2"><span>03</span><b>Categories</b></button>
+        <button class="feature-tab" role="tab" aria-selected="false" aria-controls="feature-panel" tabindex="-1" data-index="3"><span>04</span><b>Backups</b></button>
+      </div><div class="feature-description" id="feature-panel" role="tabpanel" aria-live="polite"><span class="feature-mark">✳</span><div><h3 data-feature-title>Expenses</h3><p data-feature-description>Log a coffee, grocery run, or bill with an amount, category, date, and note. Find it later in your history.</p></div></div></div>
+    </div></section>
+
+    <section class="privacy-section"><div class="wrap privacy-card reveal"><div class="privacy-symbol">⌂</div><div><p class="eyebrow">LOCAL BY DEFAULT</p><h2>Your expenses<br><em>stay on your device.</em></h2></div><p>No account or cloud sync is required for everyday tracking. Export a JSON backup when you want to keep a copy or move your data.</p></div></section>
 
     <section class="download-section wrap" id="download"><div class="download-copy reveal"><p class="eyebrow">READY WHEN YOU ARE</p><h2>A clearer view<br>starts <em>here.</em></h2><p>Get SpendPad for Android and start keeping everyday spending in perspective.</p><div class="download-facts"><span>Version <b data-version>1.0.0</b></span><span>Android <b data-compatibility>5.0 and up</b></span><span>Package <b>com.example.spendpad</b></span></div></div><div class="download-card reveal"><img src="assets/app_icon.png" alt="SpendPad app icon"><h3>SpendPad for Android</h3><p data-release-status>Release is being prepared.</p><a class="button primary download-cta" data-apk href="#download">Download APK <span>↓</span></a><a class="release-link" data-release href="#download">View release notes ↗</a><p class="source-note">APK downloads will be hosted by GitHub Releases.</p></div></section>
 
     <section class="install-section"><div class="wrap install-layout"><div><p class="eyebrow">GETTING STARTED</p><h2>Up and running<br>in a few taps.</h2></div><ol class="install-steps"><li><span>01</span><div><b>Download from the release</b><p>Use the APK download link once a release is available.</p></div></li><li><span>02</span><div><b>Allow this installation source</b><p>Android may ask you to allow your browser or file manager to install apps from this source. Review the prompt and choose what you prefer.</p></div></li><li><span>03</span><div><b>Install and open SpendPad</b><p>Follow Android's installer. Future versions will appear on the GitHub Releases page.</p></div></li></ol></div></section>
 
-    <section class="faq-section wrap"><div class="section-heading"><div><p class="eyebrow">GOOD TO KNOW</p><h2>Questions, answered.</h2></div></div><div class="faq-list"><details><summary>Does SpendPad need an internet connection?<span>+</span></summary><p>Expense tracking and local storage work offline. Internet access may be used by Android or the selected source when downloading an update.</p></details><details><summary>Where is my expense data stored?<span>+</span></summary><p>SpendPad stores expenses on your device. You can export a JSON backup and manage that file yourself.</p></details><details><summary>Why does Android show an installation warning?<span>+</span></summary><p>Android may show security prompts for apps installed outside an app store. Check that the APK came from the linked SpendPad GitHub Release before continuing.</p></details><details><summary>Which Android versions are supported?<span>+</span></summary><p>The app's Android minimum SDK is API 21 (Android 5.0). Actual availability can depend on the device and Android version.</p></details></div></section>
+    <section class="faq-section wrap"><div class="section-heading"><div><p class="eyebrow">GOOD TO KNOW</p><h2>Questions, answered.</h2></div></div><div class="faq-list"><details><summary>Does SpendPad need an internet connection?<span>+</span></summary><p>Expense tracking and local storage work offline. Internet access may be used by Android or the selected source when downloading an update.</p></details><details><summary>Where is my expense data stored?<span>+</span></summary><p>SpendPad stores expenses on your device. You can export a JSON backup and manage that file yourself.</p></details><details><summary>Why does Android show an installation warning?<span>+</span></summary><p>Android may show security prompts for apps installed outside an app store. Check that the APK came from the linked SpendPad GitHub Release before continuing.</p></details><details><summary>Which Android versions are supported?<span>+</span></summary><p>The current APK reports minimum SDK API 24 (Android 7.0). Actual availability can depend on the device and Android version.</p></details></div></section>
   </main>
+  <aside class="mobile-download" aria-label="Quick app download" aria-hidden="true" inert><span class="mobile-download-app"><img src="assets/app_icon.png" alt=""><span><b>SpendPad</b><small><span data-version>Version 1.0.0</span> · Android</small></span></span><a class="mobile-download-button" data-apk href="#download">Download <span aria-hidden="true">↓</span></a></aside>
   <footer><div class="wrap footer-inner"><a class="brand" href="#showcase"><img src="assets/app_icon.png" alt=""><span>SpendPad</span></a><span>Thoughtful spending, one day at a time.</span><a href="https://github.com/kavi617/spendpad">Project on GitHub ↗</a></div><div class="wrap footer-bottom"><span>© <span data-year></span> SpendPad</span><span>Offline-first expense tracking</span></div></footer>
 
   <dialog class="lightbox" aria-label="Screenshot viewer"><button class="lightbox-close" aria-label="Close screenshot">×</button><button class="lightbox-arrow prev" aria-label="Previous screenshot">←</button><img alt=""><button class="lightbox-arrow next" aria-label="Next screenshot">→</button><p></p></dialog>

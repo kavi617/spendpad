@@ -8,31 +8,38 @@ const screens=[
   {title:'Add an expense',file:'05-add-expense.png',alt:'SpendPad form for adding an expense',feature:0},
 ];
 const featureData=[
-  ['Track spending','Add, edit, and review expenses with categories, notes, and dates. A recent activity list keeps the latest entries close.'],
-  ['See your patterns','Explore reports with period comparisons, category breakdowns, charts, and spending insights.'],
-  ['Make it yours','Create and organize custom categories, choose their icons, and set preferences such as your currency.'],
-  ['Keep your data','Your expenses are stored locally. Export a JSON backup to save or share a copy, and import one when you need to restore.'],
+  ['Expenses','Log a coffee, grocery run, or bill with an amount, category, date, and note. Find it later in your history.'],
+  ['Reports','Check how much you spent this month, compare periods, and see which categories make up the total.'],
+  ['Categories','Group purchases your way—like Food, Transport, or Bills—and choose an icon for each category.'],
+  ['Backup & restore','Keep your records on your device. Export a JSON backup, then import it later to restore your expenses.'],
 ];
 const shotPath=(file)=>`assets/screenshots/${file}`;
 let selected=0;
-const galleryImage=document.querySelector('[data-gallery-image]');
-const thumbs=document.querySelector('.thumbnails');
 const dialog=document.querySelector('.lightbox');
 const prefersReduced=matchMedia('(prefers-reduced-motion: reduce)');
 
-function changeScreen(index){selected=(index+screens.length)%screens.length;const screen=screens[selected];galleryImage.style.opacity='0';setTimeout(()=>{galleryImage.src=shotPath(screen.file);galleryImage.alt=screen.alt;galleryImage.style.opacity='1';},prefersReduced.matches?0:120);document.querySelector('[data-gallery-caption]').textContent=screen.title;document.querySelector('[data-gallery-counter]').textContent=`${String(selected+1).padStart(2,'0')} / ${String(screens.length).padStart(2,'0')}`;document.querySelectorAll('.thumb').forEach((el,i)=>el.setAttribute('aria-selected',String(i===selected)));const hero=document.querySelector('#hero-shot');hero.src=shotPath(screen.file);hero.alt=screen.alt;document.querySelector('.preview-note span').textContent=`${String(selected+1).padStart(2,'0')} / ${String(screens.length).padStart(2,'0')}`;}
-screens.forEach((screen,index)=>{const button=document.createElement('button');button.className='thumb';button.setAttribute('role','tab');button.setAttribute('aria-label',screen.title);button.setAttribute('aria-selected',String(index===0));button.innerHTML=`<img src="${shotPath(screen.file)}" alt="" loading="lazy">`;button.addEventListener('click',()=>changeScreen(index));thumbs.append(button);});
-document.querySelectorAll('.gallery-arrow').forEach(b=>b.addEventListener('click',()=>changeScreen(selected+(b.classList.contains('prev')?-1:1))));
-document.querySelector('.preview-next').addEventListener('click',()=>{changeScreen(selected+1);document.querySelector('#screenshots').scrollIntoView({behavior:prefersReduced.matches?'instant':'smooth'});});
+function changeScreen(index){selected=(index+screens.length)%screens.length;const screen=screens[selected],hero=document.querySelector('#hero-shot'),preview=document.querySelector('.device-screen');if(prefersReduced.matches){hero.src=shotPath(screen.file);}else{preview.classList.add('is-changing');setTimeout(()=>{hero.src=shotPath(screen.file);requestAnimationFrame(()=>preview.classList.remove('is-changing'));},110);}hero.alt=screen.alt;preview.setAttribute('aria-label',`Open ${screen.title} screenshot`);document.querySelector('.preview-note span').textContent=`${String(selected+1).padStart(2,'0')} / ${String(screens.length).padStart(2,'0')}`;}
+document.querySelector('.preview-next').addEventListener('click',()=>changeScreen(selected+1));
+const demoForm=document.querySelector('#entry-demo'),demoAmount=document.querySelector('#demo-amount'),demoFields=demoForm.querySelector('.demo-fields'),demoSuccess=demoForm.querySelector('.demo-success');
+demoForm.querySelectorAll('.demo-categories button').forEach(button=>button.addEventListener('click',()=>{demoForm.querySelectorAll('.demo-categories button').forEach(option=>{const active=option===button;option.classList.toggle('selected',active);option.setAttribute('aria-pressed',String(active));});}));
+demoForm.addEventListener('submit',event=>{event.preventDefault();const amount=Number(demoAmount.value);if(!Number.isFinite(amount)||amount<=0){demoAmount.setCustomValidity('Enter an amount greater than zero.');demoAmount.reportValidity();return;}demoAmount.setCustomValidity('');const category=demoForm.querySelector('.demo-categories .selected').textContent;demoForm.querySelector('[data-demo-saved-amount]').textContent=`₹${new Intl.NumberFormat('en-IN',{maximumFractionDigits:2}).format(amount)}`;demoForm.querySelector('[data-demo-saved-category]').textContent=category;demoFields.hidden=true;demoSuccess.hidden=false;demoForm.classList.add('is-saved');});
+demoAmount.addEventListener('input',()=>demoAmount.setCustomValidity(''));
+demoForm.querySelector('.demo-again').addEventListener('click',()=>{demoForm.reset();demoAmount.value='420';demoForm.querySelector('#demo-note').value='Lunch with friends';demoForm.querySelectorAll('.demo-categories button').forEach((option,index)=>{option.classList.toggle('selected',index===0);option.setAttribute('aria-pressed',String(index===0));});demoSuccess.hidden=true;demoFields.hidden=false;demoForm.classList.remove('is-saved');});
 const lightboxImage=dialog.querySelector('img');
 function openLightbox(){lightboxImage.src=shotPath(screens[selected].file);lightboxImage.alt=screens[selected].alt;dialog.querySelector('p').textContent=screens[selected].title;dialog.showModal();}
-document.querySelector('.gallery-image').addEventListener('click',openLightbox);
+const preview=document.querySelector('.device-screen');
+preview.addEventListener('click',openLightbox);
+let previewTouchStart=null,swipeChangedScreen=false;
+preview.addEventListener('pointerdown',e=>{previewTouchStart={x:e.clientX,y:e.clientY};swipeChangedScreen=false;preview.setPointerCapture(e.pointerId);});
+preview.addEventListener('pointerup',e=>{if(!previewTouchStart)return;const dx=e.clientX-previewTouchStart.x,dy=e.clientY-previewTouchStart.y;previewTouchStart=null;if(Math.abs(dx)>36&&Math.abs(dx)>Math.abs(dy)){swipeChangedScreen=true;changeScreen(selected+(dx<0?1:-1));}});
+preview.addEventListener('pointercancel',()=>{previewTouchStart=null;});
+preview.addEventListener('click',e=>{if(swipeChangedScreen){e.preventDefault();e.stopImmediatePropagation();swipeChangedScreen=false;}},true);
 dialog.querySelector('.lightbox-close').addEventListener('click',()=>dialog.close());
 dialog.addEventListener('click',e=>{if(e.target===dialog)dialog.close();});
 dialog.querySelectorAll('.lightbox-arrow').forEach(b=>b.addEventListener('click',()=>{changeScreen(selected+(b.classList.contains('prev')?-1:1));openLightbox();}));
 document.addEventListener('keydown',e=>{if(!dialog.open)return;if(e.key==='ArrowRight')changeScreen(selected+1);if(e.key==='ArrowLeft')changeScreen(selected-1);});
 
-function chooseFeature(index){index=(index+featureData.length)%featureData.length;document.querySelectorAll('.feature-tab').forEach((tab,i)=>{tab.classList.toggle('active',i===index);tab.setAttribute('aria-selected',String(i===index));});document.querySelector('[data-feature-count]').innerHTML=`${String(index+1).padStart(2,'0')} <i>/ 04</i>`;document.querySelector('[data-feature-title]').textContent=featureData[index][0];document.querySelector('[data-feature-description]').textContent=featureData[index][1];const screenIndex=screens.findIndex(s=>s.feature===index);if(screenIndex>=0)changeScreen(screenIndex);}
+function chooseFeature(index){index=(index+featureData.length)%featureData.length;document.querySelectorAll('.feature-tab').forEach((tab,i)=>{tab.classList.toggle('active',i===index);tab.setAttribute('aria-selected',String(i===index));tab.tabIndex=i===index?0:-1;});document.querySelector('[data-feature-count]').innerHTML=`${String(index+1).padStart(2,'0')} <i>/ 04</i>`;document.querySelector('[data-feature-title]').textContent=featureData[index][0];document.querySelector('[data-feature-description]').textContent=featureData[index][1];const screenIndex=screens.findIndex(s=>s.feature===index);if(screenIndex>=0)changeScreen(screenIndex);}
 document.querySelectorAll('.feature-tab').forEach(tab=>tab.addEventListener('click',()=>chooseFeature(Number(tab.dataset.index))));
 document.querySelector('[data-feature-prev]').addEventListener('click',()=>{const i=Number(document.querySelector('.feature-tab.active').dataset.index);chooseFeature(i-1);});
 document.querySelector('[data-feature-next]').addEventListener('click',()=>{const i=Number(document.querySelector('.feature-tab.active').dataset.index);chooseFeature(i+1);});
@@ -43,4 +50,6 @@ document.querySelectorAll('[data-version]').forEach(el=>el.textContent=`Version 
 document.querySelectorAll('[data-compatibility]').forEach(el=>el.textContent=siteConfig.minAndroid.replace('Android ','')+' and up');
 document.querySelector('[data-year]').textContent=new Date().getFullYear();
 if(apkUrl){document.querySelectorAll('[data-apk]').forEach(a=>{a.href=apkUrl;a.setAttribute('download',siteConfig.apkAsset);});document.querySelector('[data-release-status]').textContent=`Version ${siteConfig.version} · ${siteConfig.apkSize||'APK download'}`;document.querySelector('[data-release]').href=releaseUrl;document.querySelector('[data-release]').target='_blank';document.querySelector('[data-release]').rel='noopener';}else{document.querySelectorAll('[data-apk]').forEach(a=>{a.setAttribute('aria-disabled','true');a.setAttribute('aria-label','APK release not published yet');a.addEventListener('click',e=>e.preventDefault());});document.querySelector('[data-release]').href=siteConfig.repository+'/releases';document.querySelector('[data-release]').target='_blank';document.querySelector('[data-release]').rel='noopener';document.querySelector('[data-release-status]').textContent='Version 1.0.0 · release not published yet';}
+const mobileDownload=document.querySelector('.mobile-download');
+if('IntersectionObserver'in window){let heroVisible=true,downloadVisible=false;const updateStickyCta=()=>{const show=!heroVisible&&!downloadVisible;mobileDownload.classList.toggle('is-visible',show);mobileDownload.setAttribute('aria-hidden',String(!show));mobileDownload.inert=!show;};const ctaObserver=new IntersectionObserver(entries=>{for(const entry of entries){if(entry.target.id==='showcase')heroVisible=entry.isIntersecting;if(entry.target.id==='download')downloadVisible=entry.isIntersecting;}updateStickyCta();},{threshold:0.08});ctaObserver.observe(document.querySelector('#showcase'));ctaObserver.observe(document.querySelector('#download'));}
 if('IntersectionObserver'in window&&!prefersReduced.matches){const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add('visible');observer.unobserve(entry.target);}}),{threshold:.12});document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));}else document.querySelectorAll('.reveal').forEach(el=>el.classList.add('visible'));
