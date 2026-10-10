@@ -61,6 +61,6 @@ Previous releases remain available. Do not reuse a release tag or replace an exi
 
 ## GitHub Pages
 
-In the repository on GitHub, open **Settings → Pages**, choose **Deploy from a branch**, select `main`, and choose `/download-site` as the folder, then save. GitHub Pages publishes at `https://kavi617.github.io/spendpad/` after the first deployment, which can take several minutes. The site uses relative paths and works under this repository subpath. Verify the published page and the linked release asset after deployment.
+The repository workflow at `.github/workflows/pages.yml` publishes `download-site/` to GitHub Pages whenever it changes on `main`, and can also be run manually from the **Actions** tab. The site uses relative paths and works under the repository subpath. The expected URL is `https://kavi617.github.io/spendpad/` after a successful deployment; the first deployment can take several minutes.
 
-There is no configured release URL yet, and GitHub Pages settings/releases could not be verified from this local checkout. The first release upload and Pages setting require an authorized GitHub account.
+To enable it, open **Settings → Pages** and set the build/deployment source to **GitHub Actions**. Push the workflow and site files to `main`; then check **Actions → Publish SpendPad showcase** for a successful deployment and open the published URL. Repository Pages settings and deployment still require an authorized GitHub account.
